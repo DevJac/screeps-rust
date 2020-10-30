@@ -1,85 +1,58 @@
 use stdweb::js;
 
-struct Logger;
+struct JsLog;
+struct JsNotify;
 
-impl log::Log for Logger {
-    fn enabled(&self, metadata: &log::Metadata) -> bool {
-        metadata.level() <= log::Level::Debug
+impl log::Log for JsLog {
+    fn enabled(&self, _metadata: &log::Metadata) -> bool {
+        true
     }
-
     fn log(&self, record: &log::Record) {
-        if self.enabled(record.metadata()) {
-            let message = format!("{} - {}", record.level(), record.args());
-            js! {
-                console.log(@{message});
-            }
+        let message = format!("{}", record.args());
+        js! {
+            console.log(@{message});
         }
     }
-
     fn flush(&self) {}
 }
 
-static LOGGER: Logger = Logger;
-
-pub fn init() -> Result<(), log::SetLoggerError> {
-    log::set_logger(&LOGGER)?;
-    log::set_max_level(log::LevelFilter::Debug);
-    Ok(())
+impl log::Log for JsNotify {
+    fn enabled(&self, _metadata: &log::Metadata) -> bool {
+        true
+    }
+    fn log(&self, record: &log::Record) {
+        let message = format!("{}", record.args());
+        js! {
+            Game.notify(@{message}, 30);
+        }
+    }
+    fn flush(&self) {}
 }
 
-//use stdweb::js;
-//
-//pub use log::LevelFilter::*;
-//
-//struct JsLog;
-//struct JsNotify;
-//
-//impl log::Log for JsLog {
-//    fn enabled(&self, _: &log::Metadata<'_>) -> bool {
-//        true
-//    }
-//    fn log(&self, record: &log::Record<'_>) {
-//        let message = format!("{}", record.args());
-//        js! {
-//            console.log(@{message});
-//        }
-//    }
-//    fn flush(&self) {}
-//}
-//impl log::Log for JsNotify {
-//    fn enabled(&self, _: &log::Metadata<'_>) -> bool {
-//        true
-//    }
-//    fn log(&self, record: &log::Record<'_>) {
-//        let message = format!("{}", record.args());
-//        js! {
-//            Game.notify(@{message});
-//        }
-//    }
-//    fn flush(&self) {}
-//}
-//
-//pub fn setup_logging(verbosity: log::LevelFilter) {
-//    fern::Dispatch::new()
-//        .level(verbosity)
-//        .format(|out, message, record| {
-//            out.finish(format_args!(
-//                "({}) {}: {}",
-//                record.level(),
-//                record.target(),
-//                message
-//            ))
-//        })
-//        .chain(Box::new(JsLog) as Box<dyn log::Log>)
-//        .chain(
-//            fern::Dispatch::new()
-//                .level(log::LevelFilter::Warn)
-//                .format(|out, message, _record| {
-//                    let time = screeps::game::time();
-//                    out.finish(format_args!("[{}] {}", time, message))
-//                })
-//                .chain(Box::new(JsNotify) as Box<dyn log::Log>),
-//        )
-//        .apply()
-//        .expect("expected setup_logging to only ever be called once per instance");
-//}
+pub fn setup_logging(verbosity: log::LevelFilter) {
+    fern::Dispatch::new()
+        .level(verbosity)
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "({}) {}: {}",
+                record.level(),
+                record.target(),
+                message
+            ))
+        })
+        .chain(Box::new(JsLog) as Box<dyn log::Log>)
+        .level(log::LevelFilter::Warn)
+        .format(|out, message, record| {
+            let time = screeps::game::time();
+            out.finish(format_args!(
+                "[{}]({}) {}: {}",
+                time,
+                record.level(),
+                record.target(),
+                message
+            ))
+        })
+        .chain(Box::new(JsNotify) as Box<dyn log::Log>)
+        .apply()
+        .expect("expect logging::init() to be called only once")
+}

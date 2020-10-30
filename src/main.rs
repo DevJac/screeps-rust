@@ -7,7 +7,7 @@ use stdweb::js;
 mod logging;
 
 fn main() {
-    logging::init().expect("failed to initialize logging");
+    logging::setup_logging(log::LevelFilter::Debug);
 
     js! {
         var game_loop = @{game_loop};
