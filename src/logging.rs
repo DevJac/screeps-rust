@@ -33,12 +33,7 @@ pub fn setup_logging(verbosity: log::LevelFilter) {
     fern::Dispatch::new()
         .level(verbosity)
         .format(|out, message, record| {
-            out.finish(format_args!(
-                "({}) {}: {}",
-                record.level(),
-                record.target(),
-                message
-            ))
+            out.finish(format_args!("{:>5}: {}", record.level(), message))
         })
         .chain(Box::new(JsLog) as Box<dyn log::Log>)
         .chain(
@@ -46,13 +41,7 @@ pub fn setup_logging(verbosity: log::LevelFilter) {
                 .level(log::LevelFilter::Warn)
                 .format(|out, message, record| {
                     let time = screeps::game::time();
-                    out.finish(format_args!(
-                        "[{}]({}) {}: {}",
-                        time,
-                        record.level(),
-                        record.target(),
-                        message
-                    ))
+                    out.finish(format_args!("[{}]{:>5}: {}", time, record.level(), message))
                 })
                 .chain(Box::new(JsNotify) as Box<dyn log::Log>),
         )

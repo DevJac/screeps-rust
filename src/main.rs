@@ -10,6 +10,7 @@ fn main() {
     logging::setup_logging(log::LevelFilter::Debug);
 
     js! {
+        console.log("\n\n====== New Code ======\n\n");
         var game_loop = @{game_loop};
 
         module.exports.loop = function() {
@@ -33,6 +34,7 @@ fn main() {
 
 fn game_loop() {
     debug!("loop starting! CPU: {}", screeps::game::cpu::get_used());
+    info!("some info");
 
     //debug!("running spawns");
     //for spawn in screeps::game::spawns::values() {
