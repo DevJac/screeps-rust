@@ -41,18 +41,21 @@ pub fn setup_logging(verbosity: log::LevelFilter) {
             ))
         })
         .chain(Box::new(JsLog) as Box<dyn log::Log>)
-        .level(log::LevelFilter::Warn)
-        .format(|out, message, record| {
-            let time = screeps::game::time();
-            out.finish(format_args!(
-                "[{}]({}) {}: {}",
-                time,
-                record.level(),
-                record.target(),
-                message
-            ))
-        })
-        .chain(Box::new(JsNotify) as Box<dyn log::Log>)
+        .chain(
+            fern::Dispatch::new()
+                .level(log::LevelFilter::Warn)
+                .format(|out, message, record| {
+                    let time = screeps::game::time();
+                    out.finish(format_args!(
+                        "[{}]({}) {}: {}",
+                        time,
+                        record.level(),
+                        record.target(),
+                        message
+                    ))
+                })
+                .chain(Box::new(JsNotify) as Box<dyn log::Log>),
+        )
         .apply()
         .expect("expect logging::init() to be called only once")
 }
