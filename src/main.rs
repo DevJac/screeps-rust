@@ -63,9 +63,24 @@ fn test_random_string() {
     assert_eq!(s.len(), 6);
 }
 
+#[test]
+fn test_string_formatting() {
+    assert_eq!(format!("{:.2}", 0.02), "0.02");
+    assert_eq!(format!("{:.2}", 0.0150_001), "0.02");
+    assert_eq!(format!("{:.2}", 0.0149_999), "0.01");
+    assert_eq!(format!("{:2.2}", 0.02), "0.02");
+    assert_eq!(format!("{:3.2}", 0.02), "0.02");
+    assert_eq!(format!("{:4.2}", 0.02), "0.02");
+    assert_eq!(format!("{:5.2}", 0.02), " 0.02");
+    assert_eq!(format!("{:6.2}", 0.02), "  0.02");
+}
+
 fn game_loop() {
-    debug!("loop starting! CPU: {}", screeps::game::cpu::get_used());
-    debug!("random string: {}", random_string());
+    debug!(
+        "Game Loop. CPU: {:5.2} / {}",
+        screeps::game::cpu::get_used(),
+        screeps::game::cpu::limit()
+    );
 }
 
 //debug!("running spawns");
