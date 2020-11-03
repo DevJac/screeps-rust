@@ -1,18 +1,32 @@
 //use std::collections::HashSet;
-//
-use log::*;
 //use screeps::{find, prelude::*, Part, ResourceType, ReturnCode, RoomObjectProperties};
+
+use log::debug;
+use rand::distributions::Alphanumeric;
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
+use std::cell::RefCell;
 use stdweb::js;
 
 mod logging;
 
+thread_local! {
+    static RNG:RefCell<SmallRng> = RefCell::new(SmallRng::seed_from_u64(0));
+}
+
+fn setup_rng() {
+    let time = screeps::game::time();
+    RNG.with(|rng| {
+        rng.replace(SmallRng::seed_from_u64(u64::from(time)));
+    });
+}
+
 fn main() {
     logging::setup_logging(log::LevelFilter::Debug);
-
+    setup_rng();
     js! {
-        console.log("\n\n====== New Code ======\n\n");
+        console.log("\n\n====== New Code & VM ======\n\n");
         var game_loop = @{game_loop};
-
         module.exports.loop = function() {
             // Provide actual error traces
             try {
@@ -32,94 +46,111 @@ fn main() {
     }
 }
 
+fn random_string() -> String {
+    RNG.with(|rng| {
+        let mut result = String::with_capacity(6);
+        for _ in 0..6 {
+            result.push(rng.borrow_mut().sample(&Alphanumeric));
+        }
+        result
+    })
+}
+
+#[test]
+fn test_random_string() {
+    let s = random_string();
+    assert_eq!(s.capacity(), 6);
+    assert_eq!(s.len(), 6);
+}
+
 fn game_loop() {
     debug!("loop starting! CPU: {}", screeps::game::cpu::get_used());
-    info!("some info");
-
-    //debug!("running spawns");
-    //for spawn in screeps::game::spawns::values() {
-    //    debug!("running spawn {}", spawn.name());
-    //    let body = [Part::Move, Part::Move, Part::Carry, Part::Work];
-
-    //    if spawn.energy() >= body.iter().map(|p| p.cost()).sum() {
-    //        // create a unique name, spawn.
-    //        let name_base = screeps::game::time();
-    //        let mut additional = 0;
-    //        let res = loop {
-    //            let name = format!("{}-{}", name_base, additional);
-    //            let res = spawn.spawn_creep(&body, &name);
-
-    //            if res == ReturnCode::NameExists {
-    //                additional += 1;
-    //            } else {
-    //                break res;
-    //            }
-    //        };
-
-    //        if res != ReturnCode::Ok {
-    //            warn!("couldn't spawn: {:?}", res);
-    //        }
-    //    }
-    //}
-
-    //debug!("running creeps");
-    //for creep in screeps::game::creeps::values() {
-    //    let name = creep.name();
-    //    debug!("running creep {}", name);
-    //    if creep.spawning() {
-    //        continue;
-    //    }
-
-    //    if creep.memory().bool("harvesting") {
-    //        if creep.store_free_capacity(Some(ResourceType::Energy)) == 0 {
-    //            creep.memory().set("harvesting", false);
-    //        }
-    //    } else {
-    //        if creep.store_used_capacity(None) == 0 {
-    //            creep.memory().set("harvesting", true);
-    //        }
-    //    }
-
-    //    if creep.memory().bool("harvesting") {
-    //        let source = &creep
-    //            .room()
-    //            .expect("room is not visible to you")
-    //            .find(find::SOURCES)[0];
-    //        if creep.pos().is_near_to(source) {
-    //            let r = creep.harvest(source);
-    //            if r != ReturnCode::Ok {
-    //                warn!("couldn't harvest: {:?}", r);
-    //            }
-    //        } else {
-    //            creep.move_to(source);
-    //        }
-    //    } else {
-    //        if let Some(c) = creep
-    //            .room()
-    //            .expect("room is not visible to you")
-    //            .controller()
-    //        {
-    //            let r = creep.upgrade_controller(&c);
-    //            if r == ReturnCode::NotInRange {
-    //                creep.move_to(&c);
-    //            } else if r != ReturnCode::Ok {
-    //                warn!("couldn't upgrade: {:?}", r);
-    //            }
-    //        } else {
-    //            warn!("creep room has no controller!");
-    //        }
-    //    }
-    //}
-
-    //let time = screeps::game::time();
-
-    //if time % 32 == 3 {
-    //    info!("running memory cleanup");
-    //    cleanup_memory().expect("expected Memory.creeps format to be a regular memory object");
-    //}
-
-    //info!("done! cpu: {}", screeps::game::cpu::get_used())
+    debug!("random string: {}", random_string());
 }
+
+//debug!("running spawns");
+//for spawn in screeps::game::spawns::values() {
+//    debug!("running spawn {}", spawn.name());
+//    let body = [Part::Move, Part::Move, Part::Carry, Part::Work];
+
+//    if spawn.energy() >= body.iter().map(|p| p.cost()).sum() {
+//        // create a unique name, spawn.
+//        let name_base = screeps::game::time();
+//        let mut additional = 0;
+//        let res = loop {
+//            let name = format!("{}-{}", name_base, additional);
+//            let res = spawn.spawn_creep(&body, &name);
+
+//            if res == ReturnCode::NameExists {
+//                additional += 1;
+//            } else {
+//                break res;
+//            }
+//        };
+
+//        if res != ReturnCode::Ok {
+//            warn!("couldn't spawn: {:?}", res);
+//        }
+//    }
+//}
+
+//debug!("running creeps");
+//for creep in screeps::game::creeps::values() {
+//    let name = creep.name();
+//    debug!("running creep {}", name);
+//    if creep.spawning() {
+//        continue;
+//    }
+
+//    if creep.memory().bool("harvesting") {
+//        if creep.store_free_capacity(Some(ResourceType::Energy)) == 0 {
+//            creep.memory().set("harvesting", false);
+//        }
+//    } else {
+//        if creep.store_used_capacity(None) == 0 {
+//            creep.memory().set("harvesting", true);
+//        }
+//    }
+
+//    if creep.memory().bool("harvesting") {
+//        let source = &creep
+//            .room()
+//            .expect("room is not visible to you")
+//            .find(find::SOURCES)[0];
+//        if creep.pos().is_near_to(source) {
+//            let r = creep.harvest(source);
+//            if r != ReturnCode::Ok {
+//                warn!("couldn't harvest: {:?}", r);
+//            }
+//        } else {
+//            creep.move_to(source);
+//        }
+//    } else {
+//        if let Some(c) = creep
+//            .room()
+//            .expect("room is not visible to you")
+//            .controller()
+//        {
+//            let r = creep.upgrade_controller(&c);
+//            if r == ReturnCode::NotInRange {
+//                creep.move_to(&c);
+//            } else if r != ReturnCode::Ok {
+//                warn!("couldn't upgrade: {:?}", r);
+//            }
+//        } else {
+//            warn!("creep room has no controller!");
+//        }
+//    }
+//}
+
+//let time = screeps::game::time();
+
+//if time % 32 == 3 {
+//    info!("running memory cleanup");
+//    cleanup_memory().expect("expected Memory.creeps format to be a regular memory object");
+//}
+
+//info!("done! cpu: {}", screeps::game::cpu::get_used())
 
 //fn cleanup_memory() -> Result<(), Box<dyn std::error::Error>> {
 //    let alive_creeps: HashSet<String> = screeps::game::creeps::keys().into_iter().collect();
